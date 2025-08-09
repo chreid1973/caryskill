@@ -1,21 +1,21 @@
-# Borrow-a-Skill — GitHub‑importable
+# CarySkill — Borrow-a-Skill (Pages-ready)
 
-This folder is ready to push to GitHub and open in StackBlitz in one click.
+Skill Swap–style app with US/Canada geocoding and seeded data.  
+Auto-deploys to **GitHub Pages** on push to `main`.
 
-## Quick push to GitHub
-1. Create a new repo at https://github.com/new (Public is fine)
-2. On the repo page, click **"uploading an existing file"**
-3. Drag & drop the **contents of this folder** (not the folder itself) into GitHub’s upload page
-4. Commit the changes
-
-## Open in StackBlitz from GitHub
-- Go to: `https://stackblitz.com/github/<your-username>/<your-repo>`  
-  (replace with your GitHub username and repo name)
-
-StackBlitz will install dependencies and run the Vite dev server automatically.
-
-## Local dev
+## Run locally
 ```bash
 npm install
 npm run dev
 ```
+
+## Open in StackBlitz
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/chreid1973/caryskill)
+
+## Deploy (GitHub Pages)
+- `vite.config.js` already sets `base: '/caryskill/'`
+- Workflow is at `.github/workflows/deploy.yml`
+- After first push, go to **Settings → Pages** and set Source: **GitHub Actions**
+
+Live URL (after deploy):  
+`https://chreid1973.github.io/caryskill/`

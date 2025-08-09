@@ -2,10 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 
 /*****************************************
  * Borrow-a-Skill — Skill Swap–style theme
- * - Poppins font + warmer palette
- * - Tabs: Browse · Add · Requests · Inbox · Profile
- * - Image uploads + local notifications
- * - Local persistence via localStorage
+ * + US & Canada city→coords
+ * + 'Use my location' in Profile
+ * + Seeded listings across regions
  *****************************************/
 
 const THEME = {
@@ -154,6 +153,62 @@ function MapPreview({ me, listings, radiusKm }) {
   );
 }
 
+/* ---------------- US & Canada city → coords ---------------- */
+const CITY_LOOKUP = {
+  // Canada
+  "Vancouver, BC": { lat: 49.2827, lng: -123.1207 },
+  "Victoria, BC": { lat: 48.4284, lng: -123.3656 },
+  "Calgary, AB": { lat: 51.0486, lng: -114.0708 },
+  "Edmonton, AB": { lat: 53.5461, lng: -113.4938 },
+  "Saskatoon, SK": { lat: 52.1332, lng: -106.6700 },
+  "Regina, SK": { lat: 50.4452, lng: -104.6189 },
+  "Winnipeg, MB": { lat: 49.8951, lng: -97.1384 },
+  "Toronto, ON": { lat: 43.6532, lng: -79.3832 },
+  "Ottawa, ON": { lat: 45.4215, lng: -75.6972 },
+  "Montreal, QC": { lat: 45.5019, lng: -73.5674 },
+  "Quebec City, QC": { lat: 46.8139, lng: -71.2080 },
+  "Halifax, NS": { lat: 44.6488, lng: -63.5752 },
+
+  // United States (selection)
+  "New York, NY": { lat: 40.7128, lng: -74.0060 },
+  "Los Angeles, CA": { lat: 34.0522, lng: -118.2437 },
+  "San Francisco, CA": { lat: 37.7749, lng: -122.4194 },
+  "San Jose, CA": { lat: 37.3382, lng: -121.8863 },
+  "San Diego, CA": { lat: 32.7157, lng: -117.1611 },
+  "Seattle, WA": { lat: 47.6062, lng: -122.3321 },
+  "Portland, OR": { lat: 45.5152, lng: -122.6784 },
+  "Phoenix, AZ": { lat: 33.4484, lng: -112.0740 },
+  "Denver, CO": { lat: 39.7392, lng: -104.9903 },
+  "Las Vegas, NV": { lat: 36.1699, lng: -115.1398 },
+  "Chicago, IL": { lat: 41.8781, lng: -87.6298 },
+  "Austin, TX": { lat: 30.2672, lng: -97.7431 },
+  "Dallas, TX": { lat: 32.7767, lng: -96.7970 },
+  "Houston, TX": { lat: 29.7604, lng: -95.3698 },
+  "San Antonio, TX": { lat: 29.4241, lng: -98.4936 },
+  "Miami, FL": { lat: 25.7617, lng: -80.1918 },
+  "Atlanta, GA": { lat: 33.7490, lng: -84.3880 },
+  "Nashville, TN": { lat: 36.1627, lng: -86.7816 },
+  "Boston, MA": { lat: 42.3601, lng: -71.0589 },
+  "Philadelphia, PA": { lat: 39.9526, lng: -75.1652 },
+  "Detroit, MI": { lat: 42.3314, lng: -83.0458 },
+  "Minneapolis, MN": { lat: 44.9778, lng: -93.2650 }
+};
+
+function normalizeCity(s) {
+  if (!s) return "";
+  return s
+    .split(",")
+    .map((part, i) => i === 0
+      ? part.trim().replace(/\b\w/g, c => c.toUpperCase())
+      : part.trim().toUpperCase()
+    )
+    .join(", ");
+}
+function geocodeCity(cityText) {
+  const key = normalizeCity(cityText);
+  return CITY_LOOKUP[key] || null;
+}
+
 /* ---------------- Thread helpers ---------------- */
 function threadKey(meName, otherName) {
   return [meName || "You", otherName || "?"].sort().join(" ⇄ ");
@@ -181,11 +236,16 @@ export default function App() {
     bio: "Friendly neighbor keen to trade skills and meet locals.", photo: "", notify: false,
   });
 
+  // Seeded listings across US & Canada
   const [listings, setListings] = usePersistentState("bas_listings", [
-    { id: 1, name: "Maya Lopez", city: "Saskatoon, SK", lat: 52.133, lng: -106.683, bio: "Ceramicist, patient teacher, tea hoarder.", offers: ["Wheel-thrown pottery", "Glazing 101"], wants: ["Basic web dev"], tags: ["art","crafts","ceramics"], photo: "" },
-    { id: 2, name: "Devon Hart", city: "Winnipeg, MB", lat: 49.895, lng: -97.138, bio: "Ex-barista & acoustics nerd. Loves community projects.", offers: ["Latte art","Build a sound-dampening panel"], wants: ["Drone flying","Public speaking"], tags: ["coffee","diy","audio"], photo: "" },
-    { id: 3, name: "Asha K.", city: "Calgary, AB", lat: 51.0486, lng: -114.0708, bio: "Birdwatcher who whistles back.", offers: ["Bird ID","Whistle like a bird"], wants: ["Sourdough rehab"], tags: ["nature","food"], photo: "" },
-    { id: 4, name: "Kai", city: "—", bio: "Nomad with no fixed lat/lng yet.", offers: ["Bike maintenance"], wants: ["Sourdough starter"], tags: ["diy"], photo: "" },
+    { id: 1, name: "Maya Lopez", city: "Saskatoon, SK", ...geocodeCity("Saskatoon, SK"), bio: "Ceramicist, patient teacher, tea hoarder.", offers: ["Wheel-thrown pottery", "Glazing 101"], wants: ["Basic web dev"], tags: ["art","crafts","ceramics"], photo: "" },
+    { id: 2, name: "Devon Hart", city: "Winnipeg, MB", ...geocodeCity("Winnipeg, MB"), bio: "Ex-barista & acoustics nerd. Loves community projects.", offers: ["Latte art","Build a sound-dampening panel"], wants: ["Drone flying","Public speaking"], tags: ["coffee","diy","audio"], photo: "" },
+    { id: 3, name: "Asha K.", city: "Calgary, AB", ...geocodeCity("Calgary, AB"), bio: "Birdwatcher who whistles back.", offers: ["Bird ID","Whistle like a bird"], wants: ["Sourdough rehab"], tags: ["nature","food"], photo: "" },
+    { id: 4, name: "Kai", city: "Regina, SK", ...geocodeCity("Regina, SK"), bio: "Fixes bikes; new to town.", offers: ["Bike maintenance"], wants: ["Sourdough starter"], tags: ["diy"], photo: "" },
+    { id: 5, name: "Jordan P.", city: "Seattle, WA", ...geocodeCity("Seattle, WA"), bio: "Hobby woodworker & latte snob.", offers: ["Intro to woodworking", "Hand tool basics"], wants: ["Pottery glazing"], tags: ["wood","coffee"], photo: "" },
+    { id: 6, name: "Priya", city: "San Francisco, CA", ...geocodeCity("San Francisco, CA"), bio: "Front-end dev into baking.", offers: ["React basics"], wants: ["Sourdough shaping"], tags: ["tech","baking"], photo: "" },
+    { id: 7, name: "Marcus", city: "Chicago, IL", ...geocodeCity("Chicago, IL"), bio: "Beat maker & audio tinkerer.", offers: ["GarageBand beats 101"], wants: ["Public speaking"], tags: ["music","audio"], photo: "" },
+    { id: 8, name: "Renee", city: "Toronto, ON", ...geocodeCity("Toronto, ON"), bio: "Salsa dancer, weekend climber.", offers: ["Salsa basics"], wants: ["Climbing knots"], tags: ["dance","outdoors"], photo: "" },
   ]);
 
   const [requests, setRequests] = usePersistentState("bas_requests", [
@@ -304,7 +364,6 @@ export default function App() {
 }
 
 /* ---------------- Tabs ---------------- */
-
 function BrowseTab({ profile, filtered, allTags, q, setQ, tag, setTag, nearby, setNearby, radiusKm, setRadiusKm, proposeSwap }) {
   return (
     <div style={{ padding: 12 }}>
@@ -341,7 +400,16 @@ function AddTab({ addListing }) {
   const [tagsText, setTagsText] = useState("");
 
   async function handleFile(e){ const f=e.target.files?.[0]; if(!f) return; const data=await readFileAsDataURL(f); setForm((p)=>({ ...p, photo:data })); }
-  function handleSubmit(e){ e.preventDefault(); const offers=splitList(offersText); const wants=splitList(wantsText); const tags=splitList(tagsText); if(!form.name.trim()||(!offers.length&&!wants.length)) return; addListing({ ...form, offers, wants, tags }); setForm({ name:"", city:"", bio:"", photo:"" }); setOffersText(""); setWantsText(""); setTagsText(""); }
+  function handleSubmit(e){
+    e.preventDefault();
+    const offers=splitList(offersText);
+    const wants=splitList(wantsText);
+    const tags=splitList(tagsText);
+    if(!form.name.trim()||(!offers.length&&!wants.length)) return;
+    const coords = geocodeCity(form.city);
+    addListing({ ...form, offers, wants, tags, ...(coords || {}) });
+    setForm({ name:"", city:"", bio:"", photo:"" }); setOffersText(""); setWantsText(""); setTagsText("");
+  }
 
   return (
     <form onSubmit={handleSubmit} style={{ padding:12, display:"grid", gap:10 }}>
@@ -351,8 +419,8 @@ function AddTab({ addListing }) {
           <input type="file" accept="image/*" onChange={handleFile} style={{ display:"none" }} /> Upload photo
         </label>
       </div>
+      <input style={inputStyle()} placeholder="City (e.g., Saskatoon, SK or Seattle, WA)" value={form.city} onChange={(e)=>setForm({ ...form, city:e.target.value })} />
       <input style={inputStyle()} placeholder="Name" value={form.name} onChange={(e)=>setForm({ ...form, name:e.target.value })} />
-      <input style={inputStyle()} placeholder="City" value={form.city} onChange={(e)=>setForm({ ...form, city:e.target.value })} />
       <textarea style={inputStyle()} placeholder="Short bio" value={form.bio} onChange={(e)=>setForm({ ...form, bio:e.target.value })} />
       <input style={inputStyle()} placeholder="Offers (comma-separated) — e.g., Pottery basics, Glazing 101" value={offersText} onChange={(e)=>setOffersText(e.target.value)} />
       <input style={inputStyle()} placeholder="Wants (comma-separated) — e.g., Public speaking, Drone flying" value={wantsText} onChange={(e)=>setWantsText(e.target.value)} />
@@ -516,11 +584,22 @@ function ProfileTab({ profile, setProfile }) {
     <form onSubmit={handleSubmit} style={{ padding:12, display:"grid", gap:12 }}>
       <div style={{ display:"flex", alignItems:"center", gap:12 }}>
         <Avatar name={form.name || "You"} src={form.photo} />
-        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+        <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
           <label style={{ fontSize:12, color:THEME.primary, cursor:"pointer" }}>
             <input type="file" accept="image/*" onChange={handleFile} style={{ display:"none" }} /> Upload photo
           </label>
           <SecondaryButton type="button" onClick={takePhotoCapacitor}>Take photo</SecondaryButton>
+          <SecondaryButton type="button" onClick={()=>{
+            if (!navigator.geolocation) { alert("Geolocation not supported in this browser."); return; }
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const { latitude, longitude } = pos.coords;
+                setForm((p)=>({ ...p, lat: latitude, lng: longitude }));
+                alert("Location set! Your distances will be accurate.");
+              },
+              (err) => alert("Couldn’t get location: " + (err?.message || "Unknown error"))
+            );
+          }}>Use my location</SecondaryButton>
         </div>
       </div>
 
@@ -546,7 +625,16 @@ function ProfileTab({ profile, setProfile }) {
       </label>
 
       <input style={inputStyle()} placeholder="Name" value={form.name} onChange={(e)=>setForm({ ...form, name:e.target.value })} />
-      <input style={inputStyle()} placeholder="City" value={form.city} onChange={(e)=>setForm({ ...form, city:e.target.value })} />
+      <input
+        style={inputStyle()}
+        placeholder="City (e.g., Saskatoon, SK or Seattle, WA)"
+        value={form.city}
+        onChange={(e)=>setForm({ ...form, city:e.target.value })}
+        onBlur={()=>{
+          const hit = geocodeCity(form.city);
+          if (hit) setForm((p)=>({ ...p, ...hit }));
+        }}
+      />
       <textarea style={inputStyle()} placeholder="Bio" value={form.bio} onChange={(e)=>setForm({ ...form, bio:e.target.value })} />
       <input style={inputStyle()} placeholder="Offers (comma-separated)" value={offersText} onChange={(e)=>setOffersText(e.target.value)} />
       <input style={inputStyle()} placeholder="Wants (comma-separated)" value={wantsText} onChange={(e)=>setWantsText(e.target.value)} />
@@ -579,7 +667,7 @@ function EmptyState({ text }){
   return <div style={{ border:`2px dashed ${THEME.line}`, padding:16, borderRadius:16, color:THEME.sub, textAlign:"center" }}>{text}</div>;
 }
 
-/* --------------- Listing & Request Cards --------------- */
+/* --------------- Cards --------------- */
 function ListingCard({ listing, onSwap }) {
   const { name, city, bio, offers=[], wants=[], tags=[], distanceKm, photo } = listing;
   return (
