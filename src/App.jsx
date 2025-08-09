@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 /*****************************************
- * Borrow-a-Skill — Skill Swap–style theme
- * + US & Canada city→coords
- * + 'Use my location' in Profile
- * + Seeded listings across regions
+ * Borrow-a-Skill — Skill Swap–style
+ * + US/Canada geocoding + seeded data
+ * + Local login (no backend) + autofill
  *****************************************/
 
 const THEME = {
@@ -27,7 +26,6 @@ const CATEGORIES = [
   "Language","Music","Outdoors & Nature","STEM & Tech","Other",
 ];
 
-/* ---------------- Utils ---------------- */
 const splitList = (s) => (s || "").split(",").map((x) => x.trim()).filter(Boolean);
 
 function haversineKm(a, b) {
@@ -41,7 +39,6 @@ function haversineKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 
-// localStorage hook
 function usePersistentState(key, initialValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -57,7 +54,6 @@ function usePersistentState(key, initialValue) {
   return [value, setValue];
 }
 
-// file -> base64 data URL
 function readFileAsDataURL(file) {
   return new Promise((res, rej) => {
     const fr = new FileReader();
@@ -67,7 +63,6 @@ function readFileAsDataURL(file) {
   });
 }
 
-/* -------------- Notifications -------------- */
 const Notifier = {
   hasCapacitor() {
     return typeof window !== "undefined" && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
@@ -106,7 +101,7 @@ const Notifier = {
   },
 };
 
-/* ---------------- Avatar ---------------- */
+/* Avatar */
 function Avatar({ name, size = 44, src }) {
   if (src) {
     return <img src={src} alt={name || "avatar"} style={{ width: size, height: size, borderRadius: 12, objectFit: "cover", border: `2px solid ${THEME.primary}` }} />;
@@ -119,7 +114,7 @@ function Avatar({ name, size = 44, src }) {
   );
 }
 
-/* ---------------- Map Preview ---------------- */
+/* SVG Map */
 function MapPreview({ me, listings, radiusKm }) {
   const width = 560, height = 240;
   const center = me && isFinite(me.lat) && isFinite(me.lng) ? me : { lat: 0, lng: 0 };
@@ -153,7 +148,7 @@ function MapPreview({ me, listings, radiusKm }) {
   );
 }
 
-/* ---------------- US & Canada city → coords ---------------- */
+/* City → coords (US/Canada) */
 const CITY_LOOKUP = {
   // Canada
   "Vancouver, BC": { lat: 49.2827, lng: -123.1207 },
@@ -169,7 +164,7 @@ const CITY_LOOKUP = {
   "Quebec City, QC": { lat: 46.8139, lng: -71.2080 },
   "Halifax, NS": { lat: 44.6488, lng: -63.5752 },
 
-  // United States (selection)
+  // United States
   "New York, NY": { lat: 40.7128, lng: -74.0060 },
   "Los Angeles, CA": { lat: 34.0522, lng: -118.2437 },
   "San Francisco, CA": { lat: 37.7749, lng: -122.4194 },
@@ -209,12 +204,10 @@ function geocodeCity(cityText) {
   return CITY_LOOKUP[key] || null;
 }
 
-/* ---------------- Thread helpers ---------------- */
 function threadKey(meName, otherName) {
   return [meName || "You", otherName || "?"].sort().join(" ⇄ ");
 }
 
-/* ---------------- Completeness & badges ---------------- */
 function profileCompleteness(p) {
   const checks = [!!p.name, !!p.city, !!p.bio, Array.isArray(p.offers)&&p.offers.length>0, Array.isArray(p.wants)&&p.wants.length>0, Array.isArray(p.tags)&&p.tags.length>0];
   const done = checks.filter(Boolean).length;
@@ -228,7 +221,6 @@ function badgesFor(p) {
   return out;
 }
 
-/* ================= MAIN APP ================= */
 export default function App() {
   const [profile, setProfile] = usePersistentState("bas_profile", {
     name: "You", city: "Regina, SK", lat: 50.445, lng: -104.618,
@@ -236,7 +228,9 @@ export default function App() {
     bio: "Friendly neighbor keen to trade skills and meet locals.", photo: "", notify: false,
   });
 
-  // Seeded listings across US & Canada
+  const [session, setSession] = usePersistentState("bas_session", { loggedIn: false });
+  const [showLogin, setShowLogin] = useState(false);
+
   const [listings, setListings] = usePersistentState("bas_listings", [
     { id: 1, name: "Maya Lopez", city: "Saskatoon, SK", ...geocodeCity("Saskatoon, SK"), bio: "Ceramicist, patient teacher, tea hoarder.", offers: ["Wheel-thrown pottery", "Glazing 101"], wants: ["Basic web dev"], tags: ["art","crafts","ceramics"], photo: "" },
     { id: 2, name: "Devon Hart", city: "Winnipeg, MB", ...geocodeCity("Winnipeg, MB"), bio: "Ex-barista & acoustics nerd. Loves community projects.", offers: ["Latte art","Build a sound-dampening panel"], wants: ["Drone flying","Public speaking"], tags: ["coffee","diy","audio"], photo: "" },
@@ -316,12 +310,26 @@ export default function App() {
 
   const pageStyle = { background: THEME.bg, minHeight: "100svh", color: THEME.ink, paddingBottom: 64 };
 
+  function doLogout(){ setSession({ loggedIn:false }); }
+
   return (
     <div style={pageStyle}>
       <header style={{ position:"sticky", top:0, zIndex:2, background:THEME.surface, borderBottom:`1px solid ${THEME.line}`, padding:"12px 14px" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:30, height:30, borderRadius:8, background:THEME.primary }} />
-          <div style={{ fontWeight: 800 }}>Borrow-a-Skill</div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:30, height:30, borderRadius:8, background:THEME.primary }} />
+            <div style={{ fontWeight: 800 }}>Borrow-a-Skill</div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            {session.loggedIn ? (
+              <>
+                <span style={{ fontSize:12, color:THEME.sub }}>Hi, <strong>{profile.name || "You"}</strong></span>
+                <SecondaryButton type="button" onClick={doLogout}>Logout</SecondaryButton>
+              </>
+            ) : (
+              <PrimaryButton type="button" onClick={()=>setShowLogin(true)}>Login</PrimaryButton>
+            )}
+          </div>
         </div>
       </header>
 
@@ -335,13 +343,19 @@ export default function App() {
         />
       )}
 
-      {activeTab === "add" && <AddTab addListing={addListing} />}
+      {activeTab === "add" && (
+        session.loggedIn
+          ? <AddTab addListing={addListing} profile={profile} />
+          : <PleaseLogin onLogin={()=>setShowLogin(true)} />
+      )}
 
       {activeTab === "requests" && (
-        <RequestsTab
-          profile={profile} requests={requests} addRequest={addRequest}
-          onOffer={(req) => sendMessage(req.requester, `Hey ${req.requester}! I can help with: ${req.title}`, true)}
-        />
+        session.loggedIn
+          ? <RequestsTab
+              profile={profile} requests={requests} addRequest={addRequest}
+              onOffer={(req) => sendMessage(req.requester, `Hey ${req.requester}! I can help with: ${req.title}`, true)}
+            />
+          : <PleaseLogin onLogin={()=>setShowLogin(true)} />
       )}
 
       {activeTab === "inbox" && (
@@ -359,11 +373,20 @@ export default function App() {
       {activeTab === "profile" && <ProfileTab profile={profile} setProfile={setProfile} />}
 
       <BottomNav active={activeTab} setActive={setActiveTab} />
+
+      {showLogin && (
+        <LoginSheet
+          profile={profile}
+          setProfile={setProfile}
+          onClose={()=>setShowLogin(false)}
+          onLoggedIn={()=>{ setSession({ loggedIn:true }); setShowLogin(false); }}
+        />
+      )}
     </div>
   );
 }
 
-/* ---------------- Tabs ---------------- */
+/* Tabs */
 function BrowseTab({ profile, filtered, allTags, q, setQ, tag, setTag, nearby, setNearby, radiusKm, setRadiusKm, proposeSwap }) {
   return (
     <div style={{ padding: 12 }}>
@@ -393,11 +416,24 @@ function BrowseTab({ profile, filtered, allTags, q, setQ, tag, setTag, nearby, s
   );
 }
 
-function AddTab({ addListing }) {
+function AddTab({ addListing, profile }) {
   const [form, setForm] = useState({ name:"", city:"", bio:"", photo:"" });
   const [offersText, setOffersText] = useState("");
   const [wantsText, setWantsText] = useState("");
   const [tagsText, setTagsText] = useState("");
+
+  // Autofill from profile on load & whenever profile changes
+  useEffect(() => {
+    setForm({
+      name: profile?.name || "",
+      city: profile?.city || "",
+      bio: profile?.bio || "",
+      photo: ""
+    });
+    setOffersText((profile?.offers || []).join(", "));
+    setWantsText((profile?.wants || []).join(", "));
+    setTagsText((profile?.tags || []).join(", "));
+  }, [profile?.name, profile?.city, profile?.bio, profile?.offers, profile?.wants, profile?.tags]);
 
   async function handleFile(e){ const f=e.target.files?.[0]; if(!f) return; const data=await readFileAsDataURL(f); setForm((p)=>({ ...p, photo:data })); }
   function handleSubmit(e){
@@ -462,7 +498,7 @@ function RequestsTab({ profile, requests, addRequest, onOffer }) {
 
   return (
     <div style={{ padding: 12, display:"grid", gap:14 }}>
-      <form onSubmit={handlePost} style={card()}>
+      <form onSubmit={handlePost} style={{ border:`1px solid ${THEME.line}`, borderRadius:16, background:THEME.surface, padding:12 }}>
         <div style={{ fontWeight:800 }}>Post a request</div>
         <input style={inputStyle()} placeholder="What do you want to learn? (title)" value={title} onChange={(e)=>setTitle(e.target.value)} />
         <textarea style={inputStyle()} placeholder="Describe what you need and what you can swap in return…" value={details} onChange={(e)=>setDetails(e.target.value)} />
@@ -603,7 +639,7 @@ function ProfileTab({ profile, setProfile }) {
         </div>
       </div>
 
-      <div style={card()}>
+      <div style={{ border:`1px solid ${THEME.line}`, borderRadius:16, background:THEME.surface, padding:12 }}>
         <div style={{ fontWeight:700, marginBottom:6 }}>Profile completeness</div>
         <div style={{ height:10, background:"#F1F5F9", borderRadius:999, overflow:"hidden" }}>
           <div style={{ width:`${pct}%`, height:"100%", background: pct>=80 ? THEME.good : THEME.warn }} />
@@ -653,8 +689,7 @@ function ProfileTab({ profile, setProfile }) {
   );
 }
 
-/* --------------- UI bits --------------- */
-function card(){ return { border:`1px solid ${THEME.line}`, borderRadius:16, background:THEME.surface, padding:12 }; }
+/* Helpers and UI Bits */
 function inputStyle(){ return { padding:"12px 14px", borderRadius:12, border:`1px solid ${THEME.line}`, background:THEME.surface }; }
 
 function PrimaryButton({ children, ...props }){
@@ -667,11 +702,10 @@ function EmptyState({ text }){
   return <div style={{ border:`2px dashed ${THEME.line}`, padding:16, borderRadius:16, color:THEME.sub, textAlign:"center" }}>{text}</div>;
 }
 
-/* --------------- Cards --------------- */
 function ListingCard({ listing, onSwap }) {
   const { name, city, bio, offers=[], wants=[], tags=[], distanceKm, photo } = listing;
   return (
-    <div style={card()}>
+    <div style={{ border:`1px solid ${THEME.line}`, borderRadius:16, background:THEME.surface, padding:12 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <Avatar name={name} src={photo} />
@@ -714,7 +748,7 @@ function ListingCard({ listing, onSwap }) {
 function RequestCard({ data, onOffer }) {
   const { requester, city, category, title, details, tags=[], createdAt } = data;
   return (
-    <div style={card()}>
+    <div style={{ border:`1px solid ${THEME.line}`, borderRadius:16, background:THEME.surface, padding:12 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <Avatar name={requester} />
@@ -743,7 +777,59 @@ function RequestCard({ data, onOffer }) {
   );
 }
 
-/* --------------- Bottom Nav --------------- */
+/* Login prompts */
+function PleaseLogin({ onLogin }) {
+  return (
+    <div style={{ padding:16 }}>
+      <div style={{ border:`2px dashed ${THEME.line}`, borderRadius:16, padding:16, background:"#fff" }}>
+        <div style={{ fontWeight:800, marginBottom:6 }}>Please log in</div>
+        <div style={{ color:THEME.sub, marginBottom:10 }}>
+          You need to be logged in to add a listing or post a request. Logging in links your profile details so forms autofill.
+        </div>
+        <PrimaryButton type="button" onClick={onLogin}>Login</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+function LoginSheet({ profile, setProfile, onClose, onLoggedIn }) {
+  const [name, setName] = useState(profile?.name || "");
+  const [city, setCity] = useState(profile?.city || "");
+  const [bio, setBio] = useState(profile?.bio || "");
+
+  function submit(e) {
+    e.preventDefault();
+    const enriched = geocodeCity(city) || {};
+    setProfile({ ...profile, name: name.trim(), city: city.trim(), bio: bio, ...enriched });
+    onLoggedIn();
+  }
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"grid", placeItems:"center", zIndex:50 }}>
+      <form onSubmit={submit} style={{ width:"min(560px, 92vw)", border:`1px solid ${THEME.line}`, borderRadius:16, background:"#fff", padding:12, boxShadow:"0 12px 40px rgba(0,0,0,0.2)" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+          <div style={{ fontWeight:800 }}>Login</div>
+          <button type="button" onClick={onClose} style={{ border:"none", background:"transparent", fontSize:18, cursor:"pointer" }}>✕</button>
+        </div>
+        <div style={{ color:THEME.sub, marginBottom:8 }}>
+          No password needed — this just links your local profile so forms can autofill.
+        </div>
+        <input style={inputStyle()} placeholder="Your name" value={name} onChange={(e)=>setName(e.target.value)} />
+        <input style={inputStyle()} placeholder="City (e.g., Regina, SK or Seattle, WA)" value={city} onChange={(e)=>setCity(e.target.value)} onBlur={()=>{
+          const hit = geocodeCity(city);
+          if (hit) setProfile({ ...profile, ...hit });
+        }} />
+        <textarea style={inputStyle()} placeholder="Short bio (optional)" value={bio} onChange={(e)=>setBio(e.target.value)} />
+        <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:8 }}>
+          <SecondaryButton type="button" onClick={onClose}>Cancel</SecondaryButton>
+          <PrimaryButton type="submit">Continue</PrimaryButton>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* Bottom Nav */
 function BottomNav({ active, setActive }){
   const items = [
     { key:"browse", label:"Browse", emoji:"🏠" },

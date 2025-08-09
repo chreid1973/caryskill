@@ -1,21 +1,17 @@
-# CarySkill — Borrow-a-Skill (Pages-ready)
+# CarySkill — Borrow-a-Skill (Login + Autofill, Pages-ready)
 
-Skill Swap–style app with US/Canada geocoding and seeded data.  
-Auto-deploys to **GitHub Pages** on push to `main`.
+- Skill Swap–style UI
+- US/Canada city→coords + seeded data
+- **Local login (no backend)**: gates Add/Requests; autofills from Profile
+- GitHub Pages deploy via Actions (with index.html entry guard)
+- Uses `npm install` in CI (no lockfile required)
 
-## Run locally
+## Run
 ```bash
 npm install
 npm run dev
 ```
 
-## Open in StackBlitz
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/chreid1973/caryskill)
-
 ## Deploy (GitHub Pages)
-- `vite.config.js` already sets `base: '/caryskill/'`
-- Workflow is at `.github/workflows/deploy.yml`
-- After first push, go to **Settings → Pages** and set Source: **GitHub Actions**
-
-Live URL (after deploy):  
-`https://chreid1973.github.io/caryskill/`
+Push to `main`. Workflow at `.github/workflows/deploy.yml` builds and deploys.
+Live URL: `https://chreid1973.github.io/caryskill/`
