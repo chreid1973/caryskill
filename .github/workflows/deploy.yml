@@ -25,15 +25,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          # remove cache: npm, since we don't have a lockfile yet
 
-      # Debug: show what index.html currently references
+      # Debug/guard for index.html entry path
       - name: Show entry line (before fix)
         run: |
           echo "=== index.html entry (before) ==="
           sed -n '1,200p' index.html | grep -n 'src=.*main.jsx' || true
 
-      # Guard: force-correct the Vite entry path if it's wrong
       - name: Ensure Vite entry path is correct
         run: |
           sed -i 's#/caryskill/src/main.jsx#/src/main.jsx#g' index.html || true
@@ -43,7 +42,7 @@ jobs:
           sed -n '1,200p' index.html | grep -n 'src=.*main.jsx' || true
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Build
         run: npm run build
