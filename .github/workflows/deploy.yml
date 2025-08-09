@@ -25,27 +25,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # remove cache: npm, since we don't have a lockfile yet
 
-      # Debug/guard for index.html entry path
-      - name: Show entry line (before fix)
-        run: |
-          echo "=== index.html entry (before) ==="
-          sed -n '1,200p' index.html | grep -n 'src=.*main.jsx' || true
-
-      - name: Ensure Vite entry path is correct
+      # Ensure dev entry is not used in prod
+      - name: Guard dev entry
         run: |
           sed -i 's#/caryskill/src/main.jsx#/src/main.jsx#g' index.html || true
           sed -i 's#src="/caryskill/src/main.jsx"#src="/src/main.jsx"#g' index.html || true
           sed -i 's#src="src/main.jsx"#src="/src/main.jsx"#g' index.html || true
-          echo "=== index.html entry (after) ==="
-          sed -n '1,200p' index.html | grep -n 'src=.*main.jsx' || true
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm install --no-audit --no-fund
 
       - name: Build
         run: npm run build
+
+      # Sanity-check the built HTML points to /caryskill/assets/index-*.js
+      - name: Show dist/index.html head
+        run: |
+          head -n 50 dist/index.html
+          echo '--- grep for assets/index ---'
+          grep -n "assets/index" dist/index.html || true
+
+      # Add .nojekyll so GH Pages doesn’t mangle asset paths
+      - name: Add .nojekyll
+        run: touch dist/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
