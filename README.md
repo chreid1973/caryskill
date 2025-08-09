@@ -1,17 +1,17 @@
-# CarySkill — Borrow-a-Skill (Login + Autofill, Pages-ready)
+# CarySkill — Borrow-a-Skill (v2)
 
-- Skill Swap–style UI
+Includes:
+- Login & autofill for adding Listings/Requests
+- My Listings & My Requests with edit/delete/mark complete
+- Hide own listings in Browse
+- Clickable tags to filter
+- Auto-update your listings when Profile changes
 - US/Canada city→coords + seeded data
-- **Local login (no backend)**: gates Add/Requests; autofills from Profile
-- GitHub Pages deploy via Actions (with index.html entry guard)
-- Uses `npm install` in CI (no lockfile required)
+- Pages-ready GitHub Action (no lockfile required)
 
 ## Run
-```bash
 npm install
 npm run dev
-```
 
-## Deploy (GitHub Pages)
-Push to `main`. Workflow at `.github/workflows/deploy.yml` builds and deploys.
-Live URL: `https://chreid1973.github.io/caryskill/`
+## Deploy
+Push to main; GitHub Action builds and publishes to Pages.
