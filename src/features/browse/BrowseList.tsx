@@ -28,6 +28,7 @@ export function BrowseList({ tag, hideOwn = true }: Props) {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Failed to load listings`);
         const data: Listing[] = await res.json();
+        console.log("Listings fetched", data, "Current user", me);
         if (!cancelled) setAll(data);
       } catch (e: any) {
         if (!cancelled) setError(e.message ?? "Unknown error");
