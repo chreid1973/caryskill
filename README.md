@@ -1,17 +1,14 @@
-# CarySkill — Borrow-a-Skill (v2)
+# CarySkill — rollback baseline WITH white-page guard
 
-Includes:
-- Login & autofill for adding Listings/Requests
-- My Listings & My Requests with edit/delete/mark complete
-- Hide own listings in Browse
-- Clickable tags to filter
-- Auto-update your listings when Profile changes
-- US/Canada city→coords + seeded data
-- Pages-ready GitHub Action (no lockfile required)
+This matches your last working version (login + autofill, browse, inbox, profile) and adds CI guards to avoid the white-page issue.
 
-## Run
+- Vite base: `/caryskill/`
+- GitHub Actions: builds `dist/`, verifies `assets/index-*.js` is referenced, adds `.nojekyll`, deploys artifact
+- Console prints `[boot] App mounting` on load
+
+## Run locally
 npm install
 npm run dev
 
 ## Deploy
-Push to main; GitHub Action builds and publishes to Pages.
+Commit to `main` — workflow will build & publish to Pages. Check the "Verify bundle path" step output to confirm.
